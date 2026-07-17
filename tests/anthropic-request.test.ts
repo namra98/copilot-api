@@ -117,6 +117,24 @@ describe("Anthropic to OpenAI translation logic", () => {
     expect(isValidChatCompletionRequest(openAIPayload)).toBe(true)
   })
 
+  test.each([
+    ["claude-opus-4-8", "claude-opus-4.8"],
+    ["claude-opus-4-8-20260701", "claude-opus-4.8"],
+    ["claude-sonnet-4-6", "claude-sonnet-4.6"],
+    ["claude-haiku-4-5-20251001", "claude-haiku-4.5"],
+    ["claude-sonnet-4-20250514", "claude-sonnet-4"],
+    ["claude-opus-4.8", "claude-opus-4.8"],
+    ["gpt-5.5", "gpt-5.5"],
+  ])("should translate model alias %s to %s", (model, expectedModel) => {
+    const anthropicPayload: AnthropicMessagesPayload = {
+      model,
+      messages: [{ role: "user", content: "Hello!" }],
+      max_tokens: 100,
+    }
+
+    expect(translateToOpenAI(anthropicPayload).model).toBe(expectedModel)
+  })
+
   test.each(["low", "medium", "high", "xhigh", "max"] as const)(
     "should forward explicit %s output effort",
     (effort) => {
