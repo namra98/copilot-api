@@ -67,12 +67,16 @@ function translateReasoningEffort(
 }
 
 function translateModelName(model: string): string {
-  // Subagent requests use a specific model number which Copilot doesn't support
-  if (model.startsWith("claude-sonnet-4-")) {
-    return model.replace(/^claude-sonnet-4-.*/, "claude-sonnet-4")
-  } else if (model.startsWith("claude-opus-")) {
-    return model.replace(/^claude-opus-4-.*/, "claude-opus-4")
+  const versionedModel = model.match(
+    /^(claude-(?:haiku|sonnet|opus)-\d+)-(\d{1,2})(?:-\d{8})?$/,
+  )
+  if (versionedModel) {
+    return `${versionedModel[1]}.${versionedModel[2]}`
   }
+
+  const datedModel = model.match(/^(claude-(?:haiku|sonnet|opus)-\d+)-\d{8}$/)
+  if (datedModel) return datedModel[1]
+
   return model
 }
 
