@@ -127,6 +127,7 @@ interface ChoiceNonStreaming {
 export interface ChatCompletionsPayload {
   messages: Array<Message>
   model: string
+  reasoning_effort?: ReasoningEffort | null
   temperature?: number | null
   top_p?: number | null
   max_tokens?: number | null
@@ -149,6 +150,8 @@ export interface ChatCompletionsPayload {
     | null
   user?: string | null
 }
+
+export type ReasoningEffort = "low" | "medium" | "high" | "xhigh" | "max"
 
 export interface Tool {
   type: "function"

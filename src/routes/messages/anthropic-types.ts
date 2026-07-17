@@ -1,5 +1,7 @@
 // Anthropic API Types
 
+import type { ReasoningEffort } from "~/services/copilot/create-chat-completions"
+
 export interface AnthropicMessagesPayload {
   model: string
   messages: Array<AnthropicMessage>
@@ -21,6 +23,9 @@ export interface AnthropicMessagesPayload {
   thinking?: {
     type: "enabled"
     budget_tokens?: number
+  }
+  output_config?: {
+    effort?: ReasoningEffort
   }
   service_tier?: "auto" | "standard_only"
 }

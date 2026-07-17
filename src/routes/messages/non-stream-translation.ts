@@ -36,6 +36,7 @@ export function translateToOpenAI(
       payload.system,
     ),
     max_tokens: payload.max_tokens,
+    reasoning_effort: translateReasoningEffort(payload),
     stop: payload.stop_sequences,
     stream: payload.stream,
     temperature: payload.temperature,
@@ -44,6 +45,25 @@ export function translateToOpenAI(
     tools: translateAnthropicToolsToOpenAI(payload.tools),
     tool_choice: translateAnthropicToolChoiceToOpenAI(payload.tool_choice),
   }
+}
+
+function translateReasoningEffort(
+  payload: AnthropicMessagesPayload,
+): ChatCompletionsPayload["reasoning_effort"] {
+  if (payload.output_config?.effort) {
+    return payload.output_config.effort
+  }
+
+  const budgetTokens = payload.thinking?.budget_tokens
+  if (payload.thinking?.type !== "enabled" || budgetTokens === undefined) {
+    return undefined
+  }
+
+  if (budgetTokens <= 2048) return "low"
+  if (budgetTokens <= 8192) return "medium"
+  if (budgetTokens <= 16000) return "high"
+  if (budgetTokens < 31999) return "xhigh"
+  return "max"
 }
 
 function translateModelName(model: string): string {

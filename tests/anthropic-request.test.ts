@@ -40,6 +40,10 @@ const chatCompletionRequestSchema = z.object({
     })
     .optional(),
   seed: z.number().int().optional().nullable(),
+  reasoning_effort: z
+    .enum(["low", "medium", "high", "xhigh", "max"])
+    .optional()
+    .nullable(),
   stop: z
     .union([z.string(), z.array(z.string())])
     .optional()
@@ -111,6 +115,64 @@ describe("Anthropic to OpenAI translation logic", () => {
     }
     const openAIPayload = translateToOpenAI(anthropicPayload)
     expect(isValidChatCompletionRequest(openAIPayload)).toBe(true)
+  })
+
+  test.each(["low", "medium", "high", "xhigh", "max"] as const)(
+    "should forward explicit %s output effort",
+    (effort) => {
+      const anthropicPayload: AnthropicMessagesPayload = {
+        model: "claude-opus-4.8",
+        messages: [{ role: "user", content: "Hello!" }],
+        max_tokens: 100,
+        output_config: { effort },
+      }
+
+      expect(translateToOpenAI(anthropicPayload).reasoning_effort).toBe(effort)
+    },
+  )
+
+  for (const [budgetTokens, effort] of [
+    [2048, "low"],
+    [2049, "medium"],
+    [8192, "medium"],
+    [8193, "high"],
+    [16000, "high"],
+    [16001, "xhigh"],
+    [31998, "xhigh"],
+    [31999, "max"],
+  ] as const) {
+    test(`should map a ${budgetTokens}-token thinking budget to ${effort} effort`, () => {
+      const anthropicPayload: AnthropicMessagesPayload = {
+        model: "claude-opus-4.8",
+        messages: [{ role: "user", content: "Hello!" }],
+        max_tokens: 100,
+        thinking: { type: "enabled", budget_tokens: budgetTokens },
+      }
+
+      expect(translateToOpenAI(anthropicPayload).reasoning_effort).toBe(effort)
+    })
+  }
+
+  test("should prefer explicit effort over a legacy thinking budget", () => {
+    const anthropicPayload: AnthropicMessagesPayload = {
+      model: "claude-opus-4.8",
+      messages: [{ role: "user", content: "Hello!" }],
+      max_tokens: 100,
+      thinking: { type: "enabled", budget_tokens: 31999 },
+      output_config: { effort: "low" },
+    }
+
+    expect(translateToOpenAI(anthropicPayload).reasoning_effort).toBe("low")
+  })
+
+  test("should omit reasoning effort when no effort is specified", () => {
+    const anthropicPayload: AnthropicMessagesPayload = {
+      model: "claude-opus-4.8",
+      messages: [{ role: "user", content: "Hello!" }],
+      max_tokens: 100,
+    }
+
+    expect(translateToOpenAI(anthropicPayload).reasoning_effort).toBeUndefined()
   })
 
   test("should handle invalid types in Anthropic payload", () => {
